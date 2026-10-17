@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api';
 import { getQrInfo, customerUrl, isLocalHost, lanUrl } from '../lib/customerUrl';
 import { auth } from '../lib/api';
 import { dateTime } from '../lib/format';
-import { Modal, QrImage, useToast, useConfirm } from './ui';
+import { Modal, QrImage, BarcodeImage, useToast, useConfirm } from './ui';
+import { printSlipNode } from '../lib/printSlip';
 
 /**
  * QR สั่งอาหารของบิลที่เปิดอยู่ พร้อมรหัสโต๊ะ 4 หลัก
@@ -18,6 +19,7 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
   const isOwner = auth.user?.role === 'OWNER';
   const [shopName, setShopName] = useState('');
   const [busy, setBusy] = useState(false);
+  const slipRef = useRef(null);
 
   useEffect(() => {
     getQrInfo()
@@ -71,17 +73,6 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
     }
   }
 
-  /** พิมพ์เฉพาะใบ QR ไม่เอาหน้าจอส่วนอื่นติดไปด้วย */
-  function printSlip() {
-    document.body.classList.add('print-slip');
-    const done = () => {
-      document.body.classList.remove('print-slip');
-      window.removeEventListener('afterprint', done);
-    };
-    window.addEventListener('afterprint', done);
-    window.print();
-  }
-
   return (
     <Modal
       title={`QR สั่งอาหาร · โต๊ะ ${order.table_no}`}
@@ -91,7 +82,7 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
           <button className="btn" onClick={regenerate} disabled={busy}>{code ? 'เปลี่ยนรหัส' : 'สร้างรหัส'}</button>
           <span className="grow" />
           {extraActions}
-          <button className="btn btn-primary" onClick={printSlip} disabled={!url}>พิมพ์ใบ QR</button>
+          <button className="btn btn-primary" onClick={() => printSlipNode(slipRef.current)} disabled={!url}>พิมพ์ใบ QR</button>
         </>
       }
     >
@@ -102,14 +93,19 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
         </div>
       ) : (
         <div className="stack">
-          <div className="qr-slip">
+          <div className="qr-slip" ref={slipRef}>
             {shopName && <div className="qr-card-shop">{shopName}</div>}
             <div className="qr-card-table">โต๊ะ {order.table_no}</div>
             {url ? <QrImage payload={url} size={200} /> : <div className="empty">กำลังสร้าง QR…</div>}
             <div className="qr-slip-code-label">รหัสโต๊ะ</div>
             <div className="qr-slip-code">{code}</div>
             <div className="qr-card-hint">สแกนแล้วกรอกรหัสโต๊ะ · ชำระเงินที่เคาน์เตอร์</div>
-            <div className="tiny faint">{order.order_no} · {dateTime(order.opened_at)}</div>
+
+            {/* บาร์โค้ดสำหรับพนักงาน ยิงที่โต๊ะแล้วเปิดบิลดูยอดที่ลูกค้ากินไปได้ทันที */}
+            <div className="qr-slip-barcode">
+              <BarcodeImage value={order.order_no} height={36} />
+              <div className="tiny faint">{order.order_no} · {dateTime(order.opened_at)}</div>
+            </div>
           </div>
 
           {base && isLocalHost(base) && (

@@ -129,6 +129,51 @@ router.get('/qr/:orderId', authRequired, wrap(async (req, res) => {
 }));
 
 /**
+ * GET /api/payments/bill-slip/:orderId — ข้อมูลใบเช็คบิลสำหรับพิมพ์ให้ลูกค้าก่อนจ่าย
+ *
+ * ต่างจากใบเสร็จตรงที่ใบนี้ออกตอน "ยังไม่จ่าย" จึงมี QR พร้อมเพย์ล็อกยอดไว้ให้สแกนจ่ายได้เลย
+ * ถ้าบิลจ่ายครบแล้วจะไม่ส่ง qr_payload กลับไป กันลูกค้าสแกนจ่ายซ้ำ
+ */
+router.get('/bill-slip/:orderId', authRequired, wrap(async (req, res) => {
+  const data = await withTransaction(async (client) => {
+    const settings = await getSettings(client);
+    const order = await getOrderFull(client, req.params.orderId);
+    const paid = Number(order.paid_amount) || 0;
+    const due = paid > 0 ? Number(order.outstanding) : Number(order.grand_total);
+
+    return {
+      shop: {
+        name: settings.shop_name,
+        branch: settings.shop_branch,
+        address: settings.shop_address,
+        phone: settings.shop_phone,
+      },
+      order_no: order.order_no,
+      receipt_no: order.payments[0]?.receipt_no ?? null,
+      table_no: order.table_no,
+      guest_count: order.guest_count,
+      opened_at: order.opened_at,
+      status: order.status,
+      items: order.items
+        .filter((i) => i.status !== 'CANCELLED')
+        .map((i) => ({ name_th: i.name_th, qty: Number(i.qty), unit_price: Number(i.unit_price), line_total: Number(i.line_total) })),
+      subtotal: order.subtotal,
+      discount: order.discount,
+      service_charge: order.service_charge,
+      vat_amount: order.vat_amount,
+      vat_rate: Number(settings.vat_rate),
+      vat_included: settings.vat_included === 'true',
+      grand_total: order.grand_total,
+      paid_amount: paid,
+      due,
+      promptpay_id: settings.promptpay_id,
+      qr_payload: due > 0 ? promptPayPayload(settings.promptpay_id, due) : null,
+    };
+  });
+  res.json({ ok: true, data });
+}));
+
+/**
  * GET /api/payments/receipt/:orderId — ข้อมูลใบเสร็จรับเงินสำหรับพิมพ์
  */
 router.get('/receipt/:orderId', authRequired, wrap(async (req, res) => {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TopBar } from '../components/Layout';
+import BillScanBox from '../components/BillScanBox';
 import { Modal, useToast, SkeletonCards, SkeletonStats } from '../components/ui';
 import CustomerQrModal from '../components/CustomerQrModal';
 import { baht, num, since, TABLE_STATUS } from '../lib/format';
@@ -86,6 +87,7 @@ export default function FloorPlan() {
   return (
     <>
       <TopBar title="ผังร้านค้า" sub="สถานะโต๊ะทั้ง 20 โต๊ะ · อัปเดตอัตโนมัติทุก 5 วินาที">
+        <BillScanBox />
         <SoundSwitch />
         <button className="btn" onClick={load}>รีเฟรช</button>
       </TopBar>

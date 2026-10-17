@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TopBar } from '../components/Layout';
 import { useToast, Spinner } from '../components/ui';
 import { baht, qty as fmtQty, dateTime, METHOD_LABEL } from '../lib/format';
+import { printSlipNode } from '../lib/printSlip';
 
 export default function Receipt() {
   const { id } = useParams();
   const nav = useNavigate();
   const toast = useToast();
   const [r, setR] = useState(null);
+  const slipRef = useRef(null);
 
   useEffect(() => {
     api.get(`/payments/receipt/${id}`).then((res) => setR(res.data)).catch((e) => toast(e.message, 'err'));
@@ -22,11 +24,11 @@ export default function Receipt() {
     <>
       <TopBar title="ใบเสร็จรับเงิน" sub={`${r.order_no} · โต๊ะ ${r.table_no}`}>
         <button className="btn" onClick={() => nav('/')}>กลับผังร้าน</button>
-        <button className="btn btn-primary" onClick={() => window.print()}>พิมพ์ / บันทึกเป็น PDF</button>
+        <button className="btn btn-primary" onClick={() => printSlipNode(slipRef.current)}>พิมพ์ใบเสร็จ</button>
       </TopBar>
 
       <div className="content">
-        <div className="receipt">
+        <div className="receipt" ref={slipRef}>
           <div className="receipt-center">
             <div style={{ fontWeight: 700, fontSize: 14 }}>{r.shop.name}</div>
             <div>{r.shop.branch}</div>

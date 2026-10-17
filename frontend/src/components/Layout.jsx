@@ -1,8 +1,10 @@
 import { NavLink, useNavigate, Outlet } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { api, auth } from '../lib/api';
 import Icon from './Icon';
 import ThemeToggle from './ThemeToggle';
+import { useToast } from './ui';
+import { useBarcodeScan, billRoute } from '../lib/billScan';
 
 const NAV = [
   { section: 'ขายหน้าร้าน' },
@@ -29,9 +31,22 @@ function initialCollapsed() {
 
 export default function Layout() {
   const nav = useNavigate();
+  const toast = useToast();
   const user = auth.user;
   const [lowCount, setLowCount] = useState(0);
   const [collapsed, setCollapsed] = useState(initialCollapsed);
+
+  // ยิงบาร์โค้ดเลขที่บิลที่หน้าไหนก็ได้ ไม่ต้องคลิกช่องก่อน -> เปิดใบเช็คบิลพร้อมสั่งพิมพ์
+  const onScan = useCallback(async (code) => {
+    try {
+      const r = await api.get(`/orders/by-no/${encodeURIComponent(code)}`);
+      nav(billRoute(r.data));
+    } catch (e) {
+      toast(`${e.message} (ยิงมา: ${code})`, 'err');
+    }
+  }, [nav, toast]);
+
+  useBarcodeScan(onScan);
 
   function toggle() {
     setCollapsed((c) => {

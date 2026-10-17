@@ -346,6 +346,10 @@ export default function OrderScreen() {
                     ยกเลิกบิล
                   </button>
                 </div>
+                <button className="btn btn-block" disabled={busy || !liveItems.length}
+                  onClick={() => nav(`/bill/${order.id}`)}>
+                  พิมพ์ใบเช็คบิล (มี QR ให้ลูกค้าสแกนจ่าย)
+                </button>
                 <button className="btn btn-primary btn-block btn-lg" disabled={busy || !liveItems.length}
                   onClick={() => nav(`/payment/${order.id}`)}>
                   เช็คบิล / ชำระเงิน

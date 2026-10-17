@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { TopBar } from '../components/Layout';
 import { useToast, SkeletonTable, Empty } from '../components/ui';
 import { baht, num, dateTime, todayISO } from '../lib/format';
+import BillScanBox from '../components/BillScanBox';
 
 const STATUS = {
   OPEN:    { label: 'กำลังใช้งาน', cls: 'pill-busy' },
@@ -38,6 +39,7 @@ export default function OrderList() {
   return (
     <>
       <TopBar title="บิลทั้งหมด" sub="ค้นหาและตรวจสอบบิลย้อนหลัง">
+        <BillScanBox />
         <input className="input" style={{ width: 148 }} type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <span className="faint">ถึง</span>
         <input className="input" style={{ width: 148 }} type="date" value={to} onChange={(e) => setTo(e.target.value)} />

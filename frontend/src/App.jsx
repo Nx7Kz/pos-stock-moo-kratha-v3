@@ -9,6 +9,7 @@ import OrderScreen from './pages/OrderScreen';
 import OrderList from './pages/OrderList';
 import Payment from './pages/Payment';
 import Receipt from './pages/Receipt';
+import BillSlip from './pages/BillSlip';
 import MenuManage from './pages/MenuManage';
 import StockPage from './pages/StockPage';
 import Reports from './pages/Reports';
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/kitchen" element={<Kitchen />} />
               <Route path="/order/:id" element={<OrderScreen />} />
               <Route path="/payment/:id" element={<Payment />} />
+              <Route path="/bill/:id" element={<BillSlip />} />
               <Route path="/receipt/:id" element={<Receipt />} />
               <Route path="/menu" element={<MenuManage />} />
               <Route path="/stock" element={<StockPage />} />

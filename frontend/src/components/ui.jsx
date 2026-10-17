@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import QR from 'qrcode';
+import JsBarcode from 'jsbarcode';
 
 /* ------------------------------------------------------------------ toast */
 const ToastCtx = createContext(() => {});
@@ -109,6 +110,33 @@ export function QrImage({ payload, size = 240 }) {
 
   if (!src) return <div className="empty" style={{ width: size, height: size }}>กำลังสร้าง QR…</div>;
   return <img src={src} alt="QR พร้อมเพย์" style={{ width: size, height: size }} />;
+}
+
+/* ----------------------------------------------------------------- barcode */
+/**
+ * บาร์โค้ด Code128 สำหรับยิงด้วยเครื่องสแกน
+ * วาดเป็น data URL แทนการใส่ลง <svg> ตรง ๆ เพราะตอนสั่งพิมพ์เราก๊อปโหนดไปพิมพ์ (cloneNode)
+ * ซึ่งก๊อป <canvas> ไปแล้วจะได้ผืนว่าง แต่ <img> ติดไปทั้งรูป
+ */
+export function BarcodeImage({ value, width = 2, height = 50 }) {
+  const [src, setSrc] = useState('');
+
+  useEffect(() => {
+    if (!value) return setSrc('');
+    try {
+      const canvas = document.createElement('canvas');
+      JsBarcode(canvas, String(value), {
+        format: 'CODE128', width, height, margin: 0,
+        displayValue: false,   // เลขที่บิลพิมพ์เป็นข้อความไทยอยู่ใต้บาร์โค้ดแล้ว
+      });
+      setSrc(canvas.toDataURL('image/png'));
+    } catch {
+      setSrc('');   // ค่าที่ Code128 เข้ารหัสไม่ได้ -> ไม่ต้องแสดงบาร์โค้ด ใบยังใช้ได้ปกติ
+    }
+  }, [value, width, height]);
+
+  if (!src) return null;
+  return <img className="barcode" src={src} alt={`บาร์โค้ด ${value}`} />;
 }
 
 /* ---------------------------------------------------------------- helpers */

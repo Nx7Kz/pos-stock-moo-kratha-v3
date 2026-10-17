@@ -31,6 +31,30 @@ router.get('/', authRequired, wrap(async (req, res) => {
   res.json({ ok: true, count: rows.length, data: rows });
 }));
 
+/**
+ * GET /api/orders/by-no/:code — ค้นบิลจากเลขที่บิลหรือเลขที่ใบเสร็จ
+ * ใช้ตอนยิงบาร์โค้ดท้ายใบเช็คบิล เพื่อเปิดบิลนั้นขึ้นมาทันที
+ * ต้องประกาศไว้ก่อน '/:id' ไม่งั้น Express จับ 'by-no' เป็น id แล้วหาไม่เจอ
+ */
+router.get('/by-no/:code', authRequired, wrap(async (req, res) => {
+  const code = String(req.params.code).trim().toUpperCase();
+  // เทียบโดยตัดอักขระที่ไม่ใช่ตัวอักษร/ตัวเลขออกทั้งสองฝั่ง
+  // เครื่องสแกนบางรุ่นส่งปุ่มของ '-' มาเป็นอักขระอื่นเมื่อ Windows อยู่ภาษาไทย
+  // ยอมหลวมตรงเครื่องหมายคั่น ดีกว่าให้พนักงานยิงแล้วหาบิลไม่เจอ
+  const { rows } = await query(
+    `SELECT o.id, o.order_no, o.status, t.table_no, p.receipt_no
+       FROM orders o
+       JOIN dining_tables t ON t.id = o.table_id
+       LEFT JOIN payments p ON p.order_id = o.id
+      WHERE regexp_replace(upper(o.order_no),  '[^A-Z0-9]', '', 'g') = regexp_replace($1, '[^A-Z0-9]', '', 'g')
+         OR regexp_replace(upper(p.receipt_no), '[^A-Z0-9]', '', 'g') = regexp_replace($1, '[^A-Z0-9]', '', 'g')
+      ORDER BY o.id DESC LIMIT 1`,
+    [code]
+  );
+  if (!rows.length) throw new AppError(404, `ไม่พบบิลเลขที่ ${code}`);
+  res.json({ ok: true, data: rows[0] });
+}));
+
 /** GET /api/orders/:id — บิล 1 ใบ พร้อมรายการอาหารและการชำระเงิน */
 router.get('/:id', authRequired, wrap(async (req, res) => {
   const data = await withTransaction((c) => getOrderFull(c, req.params.id));
