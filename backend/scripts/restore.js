@@ -84,7 +84,9 @@ ${safety ? `    ถ้าคืนผิดชุด: npm run db:restore -- "${p
 `);
 }
 
-main().catch((e) => {
+try {
+  await main();
+} catch (e) {
   console.error(`\n  คืนค่าไม่สำเร็จ: ${e.message}\n  (ข้อมูลเดิมไม่ถูกเปลี่ยน ถ้าพลาดระหว่างคืนค่า ระบบย้อนกลับให้ทั้งหมด)\n`);
   process.exitCode = 1;
-});
+}

@@ -85,9 +85,9 @@ export default function Layout() {
         </div>
 
         <nav className="nav">
-          {NAV.map((item, i) =>
+          {NAV.map((item) =>
             item.section ? (
-              <div key={i} className="nav-label">{item.section}</div>
+              <div key={item.section} className="nav-label">{item.section}</div>
             ) : (
               <NavLink key={item.to} to={item.to} end={item.end} title={collapsed ? item.label : undefined}
                 className={({ isActive }) => (isActive ? 'active' : '')}>

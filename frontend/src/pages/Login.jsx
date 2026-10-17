@@ -49,7 +49,7 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
             </div>
 
-            <button className="btn btn-accent btn-block btn-lg" disabled={busy || !username || !password}>
+            <button type="submit" className="btn btn-accent btn-block btn-lg" disabled={busy || !username || !password}>
               {busy ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
             </button>
           </div>

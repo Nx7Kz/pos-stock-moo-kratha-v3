@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { api } from '../lib/api';
+import { api, auth } from '../lib/api';
 import { getQrInfo, customerUrl, isLocalHost, lanUrl } from '../lib/customerUrl';
-import { auth } from '../lib/api';
 import { dateTime } from '../lib/format';
 import { Modal, QrImage, BarcodeImage, useToast, useConfirm } from './ui';
 import { printSlipNode } from '../lib/printSlip';
@@ -58,7 +57,8 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
 
   /** บันทึกที่อยู่เว็บที่ใส่ใน QR (เช่นลิงก์ Cloudflare ที่เปลี่ยนทุกครั้งที่เปิด tunnel ใหม่) */
   async function saveBase() {
-    const clean = editBase.trim().replace(/\/+$/, '');
+    let clean = editBase.trim();
+    while (clean.endsWith('/')) clean = clean.slice(0, -1);
     if (!/^https?:\/\/[^\s/]+/i.test(clean)) return toast('ที่อยู่เว็บต้องขึ้นต้นด้วย http:// หรือ https://', 'err');
     setBusy(true);
     try {
@@ -124,9 +124,9 @@ export default function CustomerQrModal({ order, onClose, onChanged, extraAction
             </button>
           ) : (
             <div className="base-editor no-print">
-              <label className="small bold">ที่อยู่เว็บที่มือถือลูกค้าเปิดได้</label>
+              <label className="small bold" htmlFor="qr-base">ที่อยู่เว็บที่มือถือลูกค้าเปิดได้</label>
               <div className="row">
-                <input className="input grow" value={editBase} onChange={(e) => setEditBase(e.target.value)}
+                <input id="qr-base" className="input grow" value={editBase} onChange={(e) => setEditBase(e.target.value)}
                   placeholder="เช่น https://xxxx.trycloudflare.com" />
                 <button className="btn btn-accent" onClick={saveBase} disabled={busy || !editBase.trim()}>บันทึก</button>
               </div>

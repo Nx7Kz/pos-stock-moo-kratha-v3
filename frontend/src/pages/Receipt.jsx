@@ -47,8 +47,8 @@ export default function Receipt() {
 
           <hr />
 
-          {r.items.map((it, i) => (
-            <div key={i} style={{ padding: '3px 0' }}>
+          {r.items.map((it) => (
+            <div key={it.id} style={{ padding: '3px 0' }}>
               <div className="receipt-item">
                 <span>{it.name_th}</span>
                 <span className="num">{baht(it.line_total)}</span>
@@ -77,8 +77,8 @@ export default function Receipt() {
           <div className="receipt-row big"><span>ยอดสุทธิ</span><span className="num">{baht(r.grand_total)}</span></div>
           <hr />
 
-          {r.payments.map((p, i) => (
-            <div key={i}>
+          {r.payments.map((p) => (
+            <div key={p.id}>
               <div className="receipt-row"><span>ชำระโดย {METHOD_LABEL[p.method]}</span><span className="num">{baht(p.amount)}</span></div>
               {p.received != null && (
                 <>

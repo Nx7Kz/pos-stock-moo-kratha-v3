@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // NUMERIC มาจาก pg เป็น string โดยดีฟอลต์ -> แปลงเป็น number ให้ JSON ใช้งานง่าย
-pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v) => (v === null ? null : parseFloat(v)));
-pg.types.setTypeParser(pg.types.builtins.INT8, (v) => (v === null ? null : parseInt(v, 10)));
+pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v) => (v === null ? null : Number.parseFloat(v)));
+pg.types.setTypeParser(pg.types.builtins.INT8, (v) => (v === null ? null : Number.parseInt(v, 10)));
 
 export const pool = new pg.Pool({
   host: process.env.PGHOST || 'localhost',

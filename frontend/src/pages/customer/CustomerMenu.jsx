@@ -189,9 +189,10 @@ export default function CustomerMenu() {
                 const inCart = cart[m.id] || 0;
                 const canAdd = !m.sold_out && !isBilling;
                 // แตะตรงไหนของการ์ดก็เพิ่มลงตะกร้าได้ ไม่ต้องเล็งที่ปุ่ม
+                // ใช้ <button> ไม่ได้ เพราะในการ์ดมีปุ่ม +/− ซ้อนอยู่ (ปุ่มซ้อนปุ่มผิดกฎ HTML)
                 const stop = (fn) => (e) => { e.stopPropagation(); fn(); };
                 return (
-                  <div key={m.id} className={`menu-card cust-card${inCart > 0 ? ' in-cart' : ''}${m.sold_out ? ' sold-out' : ''}`}
+                  <div key={m.id} className={`menu-card cust-card${inCart > 0 ? ' in-cart' : ''}${m.sold_out ? ' sold-out' : ''}`} // NOSONAR
                     role="button" tabIndex={canAdd ? 0 : -1} aria-disabled={!canAdd}
                     onClick={() => canAdd && add(m)}
                     onKeyDown={(e) => canAdd && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), add(m))}>
@@ -202,15 +203,15 @@ export default function CustomerMenu() {
                       {m.description && <div className="menu-desc">{m.description}</div>}
                       <div className="menu-foot">
                         <span className="menu-price">{baht(m.price)}</span>
-                        {m.sold_out ? (
-                          <span className="pill pill-danger">หมด</span>
-                        ) : inCart > 0 ? (
+                        {m.sold_out && <span className="pill pill-danger">หมด</span>}
+                        {!m.sold_out && inCart > 0 && (
                           <div className="qty-box qty-lg">
                             <button className="qty-btn" aria-label="ลดจำนวน" onClick={stop(() => setQty(m.id, inCart - 1))}>−</button>
                             <span key={inCart} className="qty-num pop">{inCart}</span>
                             <button className="qty-btn" aria-label="เพิ่มจำนวน" onClick={stop(() => setQty(m.id, inCart + 1))} disabled={isBilling}>+</button>
                           </div>
-                        ) : (
+                        )}
+                        {!m.sold_out && inCart === 0 && (
                           <button className="btn btn-accent add-btn" onClick={stop(() => add(m))} disabled={isBilling}>+ เพิ่ม</button>
                         )}
                       </div>

@@ -73,7 +73,10 @@ export default function FloorPlan() {
   const zones = [];
   for (const t of tables) {
     let z = zones.find((x) => x.name === t.zone);
-    if (!z) zones.push((z = { name: t.zone, all: [], shown: [] }));
+    if (!z) {
+      z = { name: t.zone, all: [], shown: [] };
+      zones.push(z);
+    }
     z.all.push(t);
     if (shown.includes(t)) z.shown.push(t);
   }
@@ -202,7 +205,7 @@ export default function FloorPlan() {
           <div className="stack">
             <div className="muted small">{opening.zone} · รองรับ {opening.seats} ที่นั่ง</div>
             <div className="field">
-              <label>จำนวนลูกค้า</label>
+              <div className="field-label">จำนวนลูกค้า</div>
               <div className="row">
                 <button className="qty-btn" onClick={() => setGuests((g) => Math.max(1, g - 1))}>−</button>
                 <span className="qty-num" style={{ fontSize: 19, minWidth: 44 }}>{guests}</span>

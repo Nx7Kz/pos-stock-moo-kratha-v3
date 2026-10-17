@@ -35,9 +35,8 @@ export async function recalcOrder(client, orderId) {
 
   // vat_included = true  -> ราคาขายรวม VAT แล้ว, ถอด VAT ออกมาแสดง
   // vat_included = false -> บวก VAT เพิ่มจากยอดสุทธิ
-  const vatAmount = vatRate === 0 ? 0
-    : vatIncluded ? money(base - base / (1 + vatRate))
-    : money(base * vatRate);
+  let vatAmount = 0;
+  if (vatRate !== 0) vatAmount = vatIncluded ? money(base - base / (1 + vatRate)) : money(base * vatRate);
   const grandTotal = vatIncluded ? base : money(base + vatAmount);
 
   const { rows } = await client.query(
@@ -118,7 +117,8 @@ export async function syncTableStatus(client, tableId) {
     `SELECT status FROM orders WHERE table_id = $1 AND status IN ('OPEN','BILLING') LIMIT 1`,
     [tableId]
   );
-  const status = !rows[0] ? 'FREE' : rows[0].status === 'BILLING' ? 'BILLING' : 'OCCUPIED';
+  let status = 'FREE';
+  if (rows[0]) status = rows[0].status === 'BILLING' ? 'BILLING' : 'OCCUPIED';
   await client.query('UPDATE dining_tables SET status = $2 WHERE id = $1', [tableId, status]);
   return status;
 }

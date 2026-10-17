@@ -124,7 +124,10 @@
   --line: #ece3dd; --line-strong: #dacdc5; --accent: #d62b1f;
   color: var(--ink);
 }
-.qr-slip { background: #fff; border-radius: 12px; padding: 14px; }
+.qr-slip {
+  background: #fff; border-radius: 12px; padding: 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
 /* แถบบาร์โค้ดท้ายใบ QR โต๊ะ คั่นด้วยเส้นประให้ดูแยกจากส่วนของลูกค้า */
 .qr-slip-barcode {
   width: 100%; margin-top: 8px; padding-top: 8px;
@@ -154,13 +157,15 @@ a { color: inherit; text-decoration: none; }
 .sidebar {
   width: 214px;
   flex: 0 0 214px;
-  background: var(--card);
-  border-right: 1px solid var(--line);
+  background: var(--charcoal);
+  border-right: 1px solid var(--charcoal);
+  color: #e9dfd9;
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
   height: 100vh;
+  transition: width .18s ease, flex-basis .18s ease;
 }
 
 .brand { padding: 18px 18px 14px; border-bottom: 1px solid var(--line); }
@@ -202,7 +207,6 @@ a { color: inherit; text-decoration: none; }
 .who-role { font-size: 11px; color: var(--faint); }
 
 /* ปุ่มพับเมนูซ้าย + โหมดพับ (เหลือแต่ไอคอน) สำหรับแท็บเล็ต */
-.sidebar { transition: width .18s ease, flex-basis .18s ease; }
 .collapse-btn {
   margin-left: auto; width: 28px; height: 28px; flex: none; border-radius: 7px;
   border: 1px solid var(--line); background: var(--card); color: var(--muted);
@@ -216,7 +220,7 @@ a { color: inherit; text-decoration: none; }
 .sidebar.collapsed .brand-mark { flex-direction: column; gap: 10px; }
 .sidebar.collapsed .collapse-btn { margin-left: 0; }
 .sidebar.collapsed .nav { padding: 8px; }
-.sidebar.collapsed .nav-label { font-size: 0; padding: 0; margin: 8px 6px; border-top: 1px solid var(--line); }
+.sidebar.collapsed .nav-label { font-size: 0; padding: 0; margin: 8px 6px; border-top: 1px solid rgba(255,255,255,.08); }
 .sidebar.collapsed .nav a { justify-content: center; padding: 11px 0; position: relative; }
 .sidebar.collapsed .nav a .ico { width: 20px; height: 20px; }
 .sidebar.collapsed .nav a .icon { width: 20px; height: 20px; }
@@ -231,7 +235,7 @@ a { color: inherit; text-decoration: none; }
   padding: 14px 24px; display: flex; align-items: center; gap: 16px;
   position: sticky; top: 0; z-index: 20;
 }
-.topbar h1 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.topbar h1 { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: -.01em; }
 .topbar .sub { font-size: 12.5px; color: var(--faint); margin-top: 1px; }
 .topbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 
@@ -306,7 +310,7 @@ a { color: inherit; text-decoration: none; }
 .cart-line:last-of-type { border-bottom: 0; }
 .item-note { color: var(--danger); font-weight: 600; }
 .field { display: flex; flex-direction: column; gap: 5px; }
-.field label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
+.field label, .field-label { font-size: 12.5px; font-weight: 600; color: var(--muted); }
 
 .pill {
   display: inline-flex; align-items: center; gap: 5px;
@@ -627,15 +631,16 @@ a { color: inherit; text-decoration: none; }
 .qr-box img { width: 240px; height: 240px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
 
 /* ------------------------------------------------------------------ login */
-.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: var(--bg); }
+/* พื้นแดงเข้มแบบโลโก้ (ใช้ทั้งหน้าเข้าสู่ระบบและหน้ากรอกรหัสโต๊ะ) */
+.login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: radial-gradient(circle at 50% 18%, #c8231a 0%, #7a0f0a 42%, #1d0908 100%); }
 .login-card { width: 100%; max-width: 372px; }
 .login-head { text-align: center; margin-bottom: 20px; }
 .login-logo {
   width: 52px; height: 52px; border-radius: 14px; background: var(--accent); color: #fff;
   display: grid; place-items: center; font-size: 24px; margin: 0 auto 13px;
 }
-.login-head h1 { margin: 0; font-size: 19px; font-weight: 700; letter-spacing: -.01em; }
-.login-head p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+.login-head h1 { margin: 0; font-size: 21px; font-weight: 600; letter-spacing: -.01em; color: #fff; }
+.login-head p { margin: 5px 0 0; color: rgba(255,255,255,.78); font-size: 13px; }
 .hint-box { margin-top: 14px; padding: 11px 13px; background: var(--subtle); border-radius: 8px; font-size: 12px; color: var(--muted); }
 .hint-box code { background: var(--card); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; border: 1px solid var(--line); }
 
@@ -643,8 +648,10 @@ a { color: inherit; text-decoration: none; }
 /* ห่อทั้งหน้า ให้หัวร้านติดขอบบนได้ตลอดทั้งหน้า (#root สูงแค่หนึ่งจอ ติดอยู่ใน #root จะหลุดเมื่อเลื่อนเกินจอแรก) */
 .cust-page { min-height: 100%; }
 .cust-shell { max-width: 940px; margin: 0 auto; padding-bottom: 132px; }
+/* หัวหน้าลูกค้าสีแดงตามโลโก้ */
 .cust-top {
-  background: var(--card); border-bottom: 1px solid var(--line);
+  background: linear-gradient(120deg, #9e130d 0%, var(--accent) 55%, #e8471e 100%);
+  border-bottom: 0; color: #fff; box-shadow: 0 2px 12px rgba(158,19,13,.25);
   padding: 13px 18px; position: sticky; top: 0; z-index: 20;
 }
 .cust-top-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
@@ -652,6 +659,7 @@ a { color: inherit; text-decoration: none; }
   position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
   border-top: 1px solid var(--line); padding: 12px 18px;
   box-shadow: 0 -3px 18px rgba(40, 22, 14,.07); z-index: 30;
+  animation: cartIn .22s ease-out;
 }
 .cust-cart-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 14px; }
 
@@ -679,7 +687,6 @@ a { color: inherit; text-decoration: none; }
 .qr-card-hint { font-size: 13px; font-weight: 600; }
 
 /* ใบ QR สั่งอาหาร (ออกตอนเปิดโต๊ะ) */
-.qr-slip { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .qr-slip-code-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .qr-slip-code { font-size: 38px; font-weight: 700; letter-spacing: .3em; padding-left: .3em; font-variant-numeric: tabular-nums; }
 .code-input {
@@ -772,7 +779,6 @@ a { color: inherit; text-decoration: none; }
 }
 @keyframes pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
 @keyframes cartIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
-.cust-cart { animation: cartIn .22s ease-out; }
 .cart-icon { position: relative; font-size: 28px; line-height: 1; flex: none; }
 .cart-icon.bump { animation: cartBump .45s ease-out; }
 .cart-count {
@@ -816,7 +822,6 @@ a { color: inherit; text-decoration: none; }
 .confirm-title, .modal-head h3, .card-head h2, .zone-head h2, .qr-card-table, .cust-brand {
   font-family: var(--font-head); letter-spacing: 0;
 }
-.topbar h1 { font-weight: 600; font-size: 18px; }
 .stat-value, .table-no, .menu-price { font-weight: 600; }
 
 /* โลโก้ */
@@ -824,16 +829,14 @@ a { color: inherit; text-decoration: none; }
 .brand-name { font-size: 17px; font-weight: 600; color: #fff; }
 
 /* เมนูซ้ายสีถ่าน */
-.sidebar { background: var(--charcoal); border-right-color: var(--charcoal); color: #e9dfd9; }
 .sidebar .brand { border-bottom-color: rgba(255,255,255,.08); background: linear-gradient(160deg, #3a1411 0%, var(--charcoal) 70%); }
 .sidebar .brand-sub { color: #a8968d; }
 .sidebar .nav-label { color: #8c7b73; }
 .sidebar .nav a { color: #cdbfb8; }
 .sidebar .nav a:hover { background: rgba(255,255,255,.06); color: #fff; }
 .sidebar .nav a.active { background: linear-gradient(90deg, var(--accent), #e8471e); color: #fff; box-shadow: 0 4px 14px rgba(214,43,31,.35); }
-.sidebar.collapsed .nav-label { border-top-color: rgba(255,255,255,.08); }
 .sidebar .sidebar-foot { border-top-color: rgba(255,255,255,.08); }
-.sidebar .who { color: #fff; }
+.sidebar .who { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar .who-role { color: #a8968d; }
 .sidebar .sidebar-foot .btn, .sidebar .collapse-btn {
   background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.14); color: #e9dfd9;
@@ -841,20 +844,12 @@ a { color: inherit; text-decoration: none; }
 .sidebar .sidebar-foot .btn:hover, .sidebar .collapse-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
 .sidebar .nav-badge { box-shadow: 0 0 0 2px var(--charcoal); }
 
-/* หัวหน้าลูกค้าสีแดงตามโลโก้ */
-.cust-top {
-  background: linear-gradient(120deg, #9e130d 0%, var(--accent) 55%, #e8471e 100%);
-  border-bottom: 0; color: #fff; box-shadow: 0 2px 12px rgba(158,19,13,.25);
-}
 .cust-top .faint, .cust-top .tiny { color: rgba(255,255,255,.82); }
 .cust-top .btn { background: rgba(255,255,255,.95); border-color: transparent; color: var(--accent-hover); font-weight: 600; }
 .cust-top .brand-logo { width: 40px; height: 40px; border-radius: 12px; box-shadow: 0 0 0 2px rgba(255,255,255,.55); }
 .cust-brand { font-size: 16px; font-weight: 600; line-height: 1.25; }
 
-/* หน้าเข้าสู่ระบบ / หน้ากรอกรหัสโต๊ะ: พื้นแดงเข้มแบบโลโก้ */
-.login-wrap { background: radial-gradient(circle at 50% 18%, #c8231a 0%, #7a0f0a 42%, #1d0908 100%); }
-.login-head h1 { color: #fff; font-weight: 600; font-size: 21px; }
-.login-head p { color: rgba(255,255,255,.78); }
+/* หน้าเข้าสู่ระบบ / หน้ากรอกรหัสโต๊ะ */
 .login-logo-img {
   display: block; width: 150px; margin: 0 auto 12px; border-radius: 18px;
   box-shadow: 0 12px 34px rgba(0,0,0,.45), 0 0 0 3px rgba(255,255,255,.18);
@@ -868,6 +863,7 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(90deg, var(--sk-a) 30%, var(--sk-b) 50%, var(--sk-a) 70%);
   background-size: 300% 100%; animation: skShimmer 1.3s ease-in-out infinite;
 }
+output.sk-wrap, output.sk-table { display: block; }
 .sk-wrap { padding: 4px 0; }
 .sk-card { padding: 18px; display: flex; flex-direction: column; gap: 12px; }
 .sk-table { overflow: hidden; }
@@ -888,7 +884,6 @@ a { color: inherit; text-decoration: none; }
 /* ปุ่มสลับโหมดมืดในเมนูซ้าย */
 .foot-actions { display: flex; gap: 6px; flex: none; }
 .theme-btn { width: 30px; padding: 5px 0; }
-.sidebar .who { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sidebar.collapsed .foot-actions { flex-direction: column; align-items: center; }
 /* ปุ่มสลับโหมดมืดบนแถบหัวสีแดงของลูกค้า: กลมโปร่ง กดด้วยนิ้วง่าย */
 .cust-top .theme-btn {

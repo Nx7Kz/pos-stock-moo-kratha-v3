@@ -25,8 +25,8 @@ export const billRoute = (o) =>
  */
 function charFromKey(code) {
   if (/^Key[A-Z]$/.test(code)) return code.slice(3);            // KeyO -> O
-  if (/^Digit[0-9]$/.test(code)) return code.slice(5);          // Digit3 -> 3
-  if (/^Numpad[0-9]$/.test(code)) return code.slice(6);         // เครื่องสแกนบางรุ่นส่งมาทางแป้นตัวเลข
+  if (/^Digit\d$/.test(code)) return code.slice(5);          // Digit3 -> 3
+  if (/^Numpad\d$/.test(code)) return code.slice(6);         // เครื่องสแกนบางรุ่นส่งมาทางแป้นตัวเลข
   return '';   // เครื่องหมายคั่นไม่ต้องเก็บ ตอนเทียบก็ตัดทิ้งอยู่แล้ว
 }
 

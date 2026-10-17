@@ -4,7 +4,7 @@ import { AppError, qty3 } from '../utils.js';
  * บันทึกการเคลื่อนไหวของวัตถุดิบ 1 รายการ แล้วอัปเดตยอดคงเหลือ
  * ล็อกแถววัตถุดิบด้วย FOR UPDATE เพื่อกันยอดเพี้ยนเมื่อมีการขายพร้อมกันหลายโต๊ะ
  *
- * @returns {{ingredient, balance_after, is_low}}
+ * @returns {Promise<{ingredient_id, sku, name_th, unit, qty_change, balance_after, min_qty, is_low, is_out}>}
  */
 export async function applyMovement(client, {
   ingredientId,
@@ -70,7 +70,7 @@ export async function applyMovement(client, {
  * ตัด / คืนสต็อกวัตถุดิบตามสูตรอาหาร (BOM) ของเมนูหนึ่งรายการ
  *
  * @param sign -1 = ตัดสต็อกตอนบันทึกการขาย, +1 = คืนสต็อกตอนยกเลิกรายการ
- * @returns {Array} รายการวัตถุดิบที่ต่ำกว่าจุดสั่งซื้อหลังทำรายการ (Low Stock Alert)
+ * @returns {Promise<Array>} รายการวัตถุดิบที่ต่ำกว่าจุดสั่งซื้อหลังทำรายการ (Low Stock Alert)
  */
 export async function applyRecipe(client, { menuItemId, qty, sign, refType, refId, refNo, userId, note }) {
   const { rows: recipe } = await client.query(

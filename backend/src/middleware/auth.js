@@ -67,7 +67,7 @@ export async function authRequired(req, _res, next) {
       'SELECT id, username, full_name, role, is_active, password_hash FROM users WHERE id = $1', [payload.sub]
     );
     const u = rows[0];
-    if (!u || !u.is_active) return next(new AppError(401, 'บัญชีนี้ถูกปิดใช้งานแล้ว กรุณาติดต่อเจ้าของร้าน'));
+    if (!u?.is_active) return next(new AppError(401, 'บัญชีนี้ถูกปิดใช้งานแล้ว กรุณาติดต่อเจ้าของร้าน'));
     if (payload.pv !== pwVersion(u.password_hash)) {
       return next(new AppError(401, 'รหัสผ่านถูกเปลี่ยนแล้ว กรุณาเข้าสู่ระบบใหม่'));
     }

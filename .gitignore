@@ -36,3 +36,6 @@ backend/backups/
 # รายงาน HTML ที่ใช้สร้าง PDF (PDF เก็บขึ้น git ได้ ไว้ส่งอาจารย์/ทีม)
 sonar/reports/*.html
 __pycache__/
+
+# รหัสผ่านจริงของร้าน เก็บในเครื่องเท่านั้น
+*.local.md

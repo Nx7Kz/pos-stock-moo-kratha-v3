@@ -227,7 +227,7 @@ router.get('/stock', authRequired, wrap(async (req, res) => {
 router.get('/stock-movements', authRequired, wrap(async (req, res) => {
   const { from, to } = dateRange(req.query);
   const { rows } = await query(
-    `SELECT to_char(sm.created_at AT TIME ZONE 'Asia/Bangkok', 'DD/MM/YYYY HH24:MI') AS moved_at,
+    `SELECT sm.id, to_char(sm.created_at AT TIME ZONE 'Asia/Bangkok', 'DD/MM/YYYY HH24:MI') AS moved_at,
             i.sku, i.name_th, i.unit,
             CASE sm.movement_type WHEN 'IN' THEN 'รับเข้า' WHEN 'ISSUE' THEN 'เบิกใช้'
                                   WHEN 'SALE' THEN 'ตัดจากการขาย' WHEN 'RETURN' THEN 'คืนสต็อก'

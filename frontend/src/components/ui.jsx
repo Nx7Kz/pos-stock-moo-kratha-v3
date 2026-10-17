@@ -4,13 +4,14 @@ import JsBarcode from 'jsbarcode';
 
 /* ------------------------------------------------------------------ toast */
 const ToastCtx = createContext(() => {});
+let toastSeq = 0;
 export const useToast = () => useContext(ToastCtx);
 
 export function ToastProvider({ children }) {
   const [items, setItems] = useState([]);
 
   const push = useCallback((message, kind = 'info') => {
-    const id = Math.random().toString(36).slice(2);
+    const id = ++toastSeq;
     setItems((xs) => [...xs, { id, message, kind }]);
     setTimeout(() => setItems((xs) => xs.filter((x) => x.id !== id)), kind === 'err' ? 5200 : 3200);
   }, []);
@@ -28,7 +29,20 @@ export function ToastProvider({ children }) {
 }
 
 /* ------------------------------------------------------------------ modal */
+/** กดพื้นหลังมืดรอบหน้าต่าง (ไม่ใช่ตัวหน้าต่าง) เพื่อปิด — แป้นพิมพ์ใช้ Esc แทน */
+function useBackdropClose(ref, onClose) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const onDown = (e) => e.target === el && onClose?.();
+    el.addEventListener('mousedown', onDown);
+    return () => el.removeEventListener('mousedown', onDown);
+  });
+}
+
 export function Modal({ title, onClose, children, footer, wide }) {
+  const overlay = useRef(null);
+  useBackdropClose(overlay, onClose);
   useEffect(() => {
     const onKey = (e) => e.key === 'Escape' && onClose?.();
     window.addEventListener('keydown', onKey);
@@ -36,7 +50,7 @@ export function Modal({ title, onClose, children, footer, wide }) {
   }, [onClose]);
 
   return (
-    <div className="overlay" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
+    <div className="overlay" ref={overlay}>
       <div className={`modal${wide ? ' wide' : ''}`}>
         <div className="modal-head">
           <h3>{title}</h3>
@@ -60,6 +74,8 @@ export function ConfirmProvider({ children }) {
 
   const ask = useCallback((opts) => new Promise((resolve) => setReq({ ...opts, resolve })), []);
   const answer = (ok) => { req.resolve(ok); setReq(null); };
+  const overlay = useRef(null);
+  useBackdropClose(overlay, () => answer(false));
 
   useEffect(() => {
     if (!req) return;
@@ -78,7 +94,7 @@ export function ConfirmProvider({ children }) {
     <ConfirmCtx.Provider value={ask}>
       {children}
       {req && (
-        <div className="overlay confirm-overlay" onMouseDown={(e) => e.target === e.currentTarget && answer(false)}>
+        <div className="overlay confirm-overlay" ref={overlay}>
           <div className="modal confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title">
             <div className="modal-body">
               <div className={`confirm-icon${req.danger ? ' danger' : ''}`} aria-hidden="true">{req.danger ? '!' : '?'}</div>
@@ -160,12 +176,12 @@ export function Sk({ w = '100%', h = 12, r, style, className = '' }) {
 /** แบบทั่วไป: การ์ดที่มีหัวข้อ + บรรทัดข้อความ */
 export function Spinner({ label = 'กำลังโหลด…', lines = 5 }) {
   return (
-    <div className="sk-wrap" role="status" aria-label={label}>
+    <output className="sk-wrap" aria-label={label}>
       <div className="card sk-card">
         <Sk w="38%" h={16} />
         {Array.from({ length: lines }, (_, i) => <Sk key={i} w={`${92 - ((i * 17) % 35)}%`} />)}
       </div>
-    </div>
+    </output>
   );
 }
 
@@ -183,13 +199,40 @@ export function SkeletonStats({ count = 4 }) {
 /** ตาราง: หัวตาราง + แถวข้อมูล */
 export function SkeletonTable({ rows = 8, cols = 6, label = 'กำลังโหลดข้อมูล…' }) {
   return (
-    <div className="card sk-table" role="status" aria-label={label}>
+    <output className="card sk-table" aria-label={label}>
       <div className="sk-row sk-head">{Array.from({ length: cols }, (_, c) => <Sk key={c} w={c === 1 ? '28%' : '10%'} h={10} />)}</div>
       {Array.from({ length: rows }, (_, r) => (
         <div key={r} className="sk-row">
           {Array.from({ length: cols }, (_, c) => <Sk key={c} w={c === 1 ? `${22 + ((r * 7) % 14)}%` : '9%'} h={c === 1 ? 13 : 11} />)}
         </div>
       ))}
+    </output>
+  );
+}
+
+/** การ์ดโครงร่าง 1 ใบตามชนิด */
+function SkeletonCard({ kind, index }) {
+  if (kind === 'table') {
+    return (
+      <div className="sk-tcard">
+        <div className="row-between"><Sk w={46} h={20} /><Sk w={54} h={20} r={12} /></div>
+        <Sk w={50} h={10} />
+        <Sk w="60%" h={10} style={{ marginTop: 'auto' }} />
+      </div>
+    );
+  }
+  if (kind === 'ticket') {
+    return (
+      <div className="sk-tcard" style={{ minHeight: 190 }}>
+        <div className="row-between"><Sk w={70} h={22} /><Sk w={48} h={16} /></div>
+        {Array.from({ length: 3 + (index % 2) }, (_, j) => <Sk key={j} h={38} r={8} />)}
+      </div>
+    );
+  }
+  return (
+    <div className="sk-mcard">
+      <Sk h={null} r={0} className="sk-thumb" />
+      <div className="sk-mbody"><Sk w="75%" h={13} /><Sk w="55%" h={10} /><Sk w="35%" h={15} style={{ marginTop: 6 }} /></div>
     </div>
   );
 }
@@ -201,27 +244,9 @@ export function SkeletonTable({ rows = 8, cols = 6, label = 'กำลังโ�
 export function SkeletonCards({ kind = 'menu', count = 8, className = '', label = 'กำลังโหลด…' }) {
   const grid = { table: 'floor-grid', menu: 'menu-grid', ticket: 'k-grid' }[kind];
   return (
-    <div className={`${grid} ${className}`} role="status" aria-label={label}>
-      {Array.from({ length: count }, (_, i) => (
-        kind === 'table' ? (
-          <div key={i} className="sk-tcard">
-            <div className="row-between"><Sk w={46} h={20} /><Sk w={54} h={20} r={12} /></div>
-            <Sk w={50} h={10} />
-            <Sk w="60%" h={10} style={{ marginTop: 'auto' }} />
-          </div>
-        ) : kind === 'ticket' ? (
-          <div key={i} className="sk-tcard" style={{ minHeight: 190 }}>
-            <div className="row-between"><Sk w={70} h={22} /><Sk w={48} h={16} /></div>
-            {Array.from({ length: 3 + (i % 2) }, (_, j) => <Sk key={j} h={38} r={8} />)}
-          </div>
-        ) : (
-          <div key={i} className="sk-mcard">
-            <Sk h={null} r={0} className="sk-thumb" />
-            <div className="sk-mbody"><Sk w="75%" h={13} /><Sk w="55%" h={10} /><Sk w="35%" h={15} style={{ marginTop: 6 }} /></div>
-          </div>
-        )
-      ))}
-    </div>
+    <output className={`${grid} ${className}`} aria-label={label}>
+      {Array.from({ length: count }, (_, i) => <SkeletonCard key={i} kind={kind} index={i} />)}
+    </output>
   );
 }
 

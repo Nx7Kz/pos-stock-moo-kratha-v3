@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { api } from '../lib/api';
 import { TopBar } from '../components/Layout';
 import { useToast, Spinner, Empty } from '../components/ui';
-import { baht, num, todayISO, dateTime, METHOD_LABEL, STOCK_STATUS, qty as fmtQty } from '../lib/format';
+import { baht, num, todayISO, METHOD_LABEL, STOCK_STATUS, qty as fmtQty } from '../lib/format';
 
 const TABS = [
   { key: 'sales', label: 'ยอดขาย' },
@@ -258,8 +258,8 @@ function ReportBody({ tab, payload }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
+              {rows.map((r) => (
+                <tr key={r.id}>
                   <td className="small">{r.moved_at}</td>
                   <td className="bold">{r.name_th}</td>
                   <td><span className={`pill ${r.qty_change > 0 ? 'pill-free' : 'pill-muted'}`}>{r.type_label}</span></td>

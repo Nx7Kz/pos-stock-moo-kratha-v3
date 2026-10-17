@@ -54,7 +54,7 @@ export default function CodeGate({ tableNo, problem, onSubmit, onRetry }) {
                 {showError && (
                   <div className="alert alert-danger"><span>⚠</span><span>{problem.message}</span></div>
                 )}
-                <button className="btn btn-accent btn-block btn-lg" disabled={busy || locked || code.length !== 4}>
+                <button type="submit" className="btn btn-accent btn-block btn-lg" disabled={busy || locked || code.length !== 4}>
                   {busy ? 'กำลังตรวจสอบ…' : 'เข้าสู่เมนู'}
                 </button>
                 <div className="tiny faint center">รหัสอยู่บนใบ QR ที่พนักงานให้ตอนเปิดโต๊ะ</div>

@@ -18,13 +18,13 @@ function audio() {
 /** ต้องเรียกจากการแตะ/คลิกของผู้ใช้ เบราว์เซอร์ถึงจะยอมให้เล่นเสียง */
 export function unlockSound() {
   const a = audio();
-  return a && a.state === 'suspended' ? a.resume().catch(() => {}) : Promise.resolve();
+  return a?.state === 'suspended' ? a.resume().catch(() => {}) : Promise.resolve();
 }
 
 window.addEventListener('pointerdown', () => unlockSound(), { once: true });
 
 /** เบราว์เซอร์ยังไม่อนุญาตให้เล่นเสียง (ยังไม่มีใครแตะหน้าเว็บ) */
-export const soundLocked = () => !ctx || ctx.state !== 'running';
+export const soundLocked = () => ctx?.state !== 'running';
 
 // สวิตช์เปิด/ปิดเสียงเตือน จำไว้ในเครื่อง (ค่าเริ่มต้น = เปิด)
 const ENABLED_KEY = 'alert_sound';
@@ -39,7 +39,7 @@ export function setSoundEnabled(on) {
 export function playAlert({ force = false } = {}) {
   if (!force && !soundEnabled()) return;
   const a = audio();
-  if (!a || a.state !== 'running') return;
+  if (a?.state !== 'running') return;
 
   const tone = (freq, start, dur) => {
     const osc = a.createOscillator();

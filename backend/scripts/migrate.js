@@ -117,8 +117,10 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+try {
+  await main();
+} catch (err) {
   console.error('\n  สร้างฐานข้อมูลไม่สำเร็จ:', err.message);
   console.error(err.detail || err.where || '');
   process.exit(1);
-});
+}

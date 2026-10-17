@@ -10,6 +10,11 @@ import SoundSwitch from '../components/SoundSwitch';
 const WARN_MIN = 10;
 const LATE_MIN = 20;
 
+function toggleFullscreen() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen?.().catch(() => {});
+}
+
 /**
  * หน้าจอครัว — รายการที่ยังไม่เสิร์ฟจากทุกโต๊ะ แยกเป็นใบตามโต๊ะ + รอบที่สั่ง
  * เปิดค้างไว้บนแท็บเล็ตในครัว หรือเปิดเป็นแท็บหนึ่งที่เคาน์เตอร์ก็ได้
@@ -90,11 +95,6 @@ export default function Kitchen() {
     }
   }
 
-  function toggleFullscreen() {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else document.documentElement.requestFullscreen?.().catch(() => {});
-  }
-
   const minutes = (iso) => (Date.now() - new Date(iso).getTime()) / 60000;
 
   return (
@@ -116,14 +116,17 @@ export default function Kitchen() {
           ))}
         </div>
 
-        {loading ? <SkeletonCards kind="ticket" count={4} label="กำลังโหลดออเดอร์…" /> : !tickets.length ? (
-          <Empty icon="✅">ไม่มีรายการรอเสิร์ฟ</Empty>
-        ) : (
+        {loading && <SkeletonCards kind="ticket" count={4} label="กำลังโหลดออเดอร์…" />}
+        {!loading && !tickets.length && <Empty icon="✅">ไม่มีรายการรอเสิร์ฟ</Empty>}
+        {!loading && tickets.length > 0 && (
           <div className="k-grid">
             {tickets.map((t) => {
               const m = minutes(t.at);
-              const level = m >= LATE_MIN ? ' is-late' : m >= WARN_MIN ? ' is-warn' : '';
-              const label = `โต๊ะ ${t.table_no} ${t.round_no === 1 ? 'รอบแรก' : `รอบที่ ${t.round_no}`}`;
+              let level = '';
+              if (m >= LATE_MIN) level = ' is-late';
+              else if (m >= WARN_MIN) level = ' is-warn';
+              const round = t.round_no === 1 ? 'รอบแรก' : 'รอบที่ ' + t.round_no;
+              const label = `โต๊ะ ${t.table_no} ${round}`;
               return (
                 <div key={t.key} className={`k-ticket${level}`}>
                   <div className="k-head">

@@ -117,6 +117,34 @@ router.post('/:id/items', authRequired, wrap(async (req, res) => {
   res.status(201).json({ ok: true, message: 'บันทึกรายการอาหารและตัดสต็อกเรียบร้อย', ...data });
 }));
 
+/** เปลี่ยนจำนวนของรายการอาหาร แล้วตัด/คืนสต็อกตามส่วนต่าง คืนรายการแจ้งเตือนสต็อกต่ำ */
+async function changeItemQty(client, order, item, qty, userId) {
+  if (Number(qty) <= 0) throw new AppError(400, 'จำนวนต้องมากกว่า 0 (ถ้าต้องการยกเลิกให้ใช้ DELETE)');
+  const diff = Number(qty) - Number(item.qty);
+  let alerts = [];
+  if (diff > 0) {
+    const short = await checkAvailability(client, item.menu_item_id, diff);
+    if (short.length) throw new AppError(409, `วัตถุดิบไม่พอสำหรับเพิ่มจำนวน: ${short.map((s) => s.name_th).join(', ')}`, short);
+  }
+  if (diff !== 0) {
+    alerts = await applyRecipe(client, {
+      menuItemId: item.menu_item_id,
+      qty: Math.abs(diff),
+      sign: diff > 0 ? -1 : 1,
+      refType: 'ORDER',
+      refId: order.id,
+      refNo: order.order_no,
+      userId,
+      note: `แก้ไขจำนวน ${item.qty} -> ${qty}`,
+    });
+  }
+  await client.query(
+    'UPDATE order_items SET qty = $2, line_total = $2 * unit_price WHERE id = $1',
+    [item.id, qty]
+  );
+  return alerts;
+}
+
 /** PATCH /api/orders/:id/items/:itemId — แก้จำนวน (ปรับสต็อกตามส่วนต่าง) */
 router.patch('/:id/items/:itemId', authRequired, wrap(async (req, res) => {
   const { qty, note } = req.body || {};
@@ -132,31 +160,7 @@ router.patch('/:id/items/:itemId', authRequired, wrap(async (req, res) => {
     if (!item) throw new AppError(404, 'ไม่พบรายการอาหารในบิลนี้');
     if (item.status === 'CANCELLED') throw new AppError(409, 'รายการนี้ถูกยกเลิกไปแล้ว');
 
-    let alerts = [];
-    if (qty !== undefined) {
-      if (Number(qty) <= 0) throw new AppError(400, 'จำนวนต้องมากกว่า 0 (ถ้าต้องการยกเลิกให้ใช้ DELETE)');
-      const diff = Number(qty) - Number(item.qty);
-      if (diff !== 0) {
-        if (diff > 0) {
-          const short = await checkAvailability(client, item.menu_item_id, diff);
-          if (short.length) throw new AppError(409, `วัตถุดิบไม่พอสำหรับเพิ่มจำนวน: ${short.map((s) => s.name_th).join(', ')}`, short);
-        }
-        alerts = await applyRecipe(client, {
-          menuItemId: item.menu_item_id,
-          qty: Math.abs(diff),
-          sign: diff > 0 ? -1 : 1,
-          refType: 'ORDER',
-          refId: order.id,
-          refNo: order.order_no,
-          userId: req.user.id,
-          note: `แก้ไขจำนวน ${item.qty} -> ${qty}`,
-        });
-      }
-      await client.query(
-        'UPDATE order_items SET qty = $2, line_total = $2 * unit_price WHERE id = $1',
-        [item.id, qty]
-      );
-    }
+    const alerts = qty === undefined ? [] : await changeItemQty(client, order, item, qty, req.user.id);
     if (note !== undefined) {
       await client.query('UPDATE order_items SET note = $2 WHERE id = $1', [item.id, note]);
     }
@@ -347,7 +351,7 @@ export async function nextRound(client, orderId) {
  */
 export async function addItem(client, order, input, userId, roundNo = 1, { byCustomer = false } = {}) {
   const qty = Number(input.qty ?? 1);
-  if (!(qty > 0)) throw new AppError(400, 'จำนวนต้องมากกว่า 0');
+  if (Number.isNaN(qty) || qty <= 0) throw new AppError(400, 'จำนวนต้องมากกว่า 0');
   // หมายเหตุต่อรายการ เช่น "ไม่ใส่พริก" ว่างเปล่าถือว่าไม่มี ยาวเกินตัดทิ้ง
   const note = String(input.note ?? '').trim().slice(0, 100) || null;
 
@@ -363,9 +367,8 @@ export async function addItem(client, order, input, userId, roundNo = 1, { byCus
 
   const short = await checkAvailability(client, item.id, qty);
   if (short.length) {
-    throw new AppError(409,
-      `วัตถุดิบไม่พอสำหรับ "${item.name_th}" จำนวน ${qty} ${item.unit}: ${short.map((s) => `${s.name_th} (เหลือ ${s.qty_on_hand} ${s.unit} ต้องใช้ ${s.required})`).join(', ')}`,
-      short);
+    const missing = short.map((s) => `${s.name_th} (เหลือ ${s.qty_on_hand} ${s.unit} ต้องใช้ ${s.required})`).join(', ');
+    throw new AppError(409, `วัตถุดิบไม่พอสำหรับ "${item.name_th}" จำนวน ${qty} ${item.unit}: ${missing}`, short);
   }
 
   await client.query(

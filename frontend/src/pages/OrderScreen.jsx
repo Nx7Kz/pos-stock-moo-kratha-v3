@@ -8,6 +8,24 @@ import MenuThumb from '../components/MenuThumb';
 import CustomerQrModal from '../components/CustomerQrModal';
 import { baht, qty as fmtQty, since, TABLE_STATUS } from '../lib/format';
 
+/** ส่วนลดต้องเป็นตัวเลข 0 ถึงยอดรวม (หลังบ้านตรวจซ้ำอีกชั้น) คืนข้อความผิดพลาด หรือ '' ถ้าถูกต้อง */
+function discountProblem(discount, subtotal) {
+  const n = Number(discount);
+  if (String(discount).trim() === '' || !Number.isFinite(n)) return 'กรอกส่วนลดเป็นตัวเลข';
+  if (n < 0) return 'ส่วนลดต้องไม่ติดลบ';
+  if (n > Number(subtotal)) return `ส่วนลดเกินยอดรวม — ใส่ได้สูงสุด ${baht(subtotal)} บาท`;
+  return '';
+}
+
+const CLOSED_LABEL = { PAID: 'ชำระเงินแล้ว', VOID: 'ยกเลิกแล้ว' };
+
+/** ป้ายท้ายการ์ดเมนู: หมด / เหลือน้อย / หน่วย */
+function StockHint({ item, out }) {
+  if (out) return <span className="pill pill-danger">วัตถุดิบหมด</span>;
+  if (item.max_servable !== null && item.max_servable <= 5) return <span className="pill pill-billing">เหลือ {item.max_servable}</span>;
+  return <span className="tiny faint">{item.unit}</span>;
+}
+
 export default function OrderScreen() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -171,11 +189,7 @@ export default function OrderScreen() {
   if (!order) return <><TopBar title="สั่งอาหาร" /><Empty icon="⚠️">ไม่พบบิลนี้</Empty></>;
 
   const liveItems = order.items.filter((i) => i.status !== 'CANCELLED');
-  // ส่วนลดต้องเป็นตัวเลข 0 ถึงยอดรวม (หลังบ้านตรวจซ้ำอีกชั้น)
-  const discountError = String(discount).trim() === '' || !Number.isFinite(Number(discount)) ? 'กรอกส่วนลดเป็นตัวเลข'
-    : Number(discount) < 0 ? 'ส่วนลดต้องไม่ติดลบ'
-    : Number(discount) > Number(order.subtotal) ? `ส่วนลดเกินยอดรวม — ใส่ได้สูงสุด ${baht(order.subtotal)} บาท`
-    : '';
+  const discountError = discountProblem(discount, order.subtotal);
   const isClosed = order.status === 'PAID' || order.status === 'VOID';
   const st = TABLE_STATUS[order.status === 'BILLING' ? 'BILLING' : 'OCCUPIED'];
 
@@ -187,7 +201,7 @@ export default function OrderScreen() {
       >
         <span className={`pill ${isClosed ? 'pill-muted' : st.cls}`}>
           <i className="dot" />
-          {order.status === 'PAID' ? 'ชำระเงินแล้ว' : order.status === 'VOID' ? 'ยกเลิกแล้ว' : st.label}
+          {CLOSED_LABEL[order.status] ?? st.label}
         </span>
         {!isClosed && (
           <button className="btn" onClick={() => setQrOpen(true)}>
@@ -229,13 +243,7 @@ export default function OrderScreen() {
                     {m.description && <div className="menu-desc">{m.description}</div>}
                     <div className="menu-foot">
                       <span className="menu-price">{baht(m.price)}</span>
-                      {out ? (
-                        <span className="pill pill-danger">วัตถุดิบหมด</span>
-                      ) : m.max_servable !== null && m.max_servable <= 5 ? (
-                        <span className="pill pill-billing">เหลือ {m.max_servable}</span>
-                      ) : (
-                        <span className="tiny faint">{m.unit}</span>
-                      )}
+                      <StockHint item={m} out={out} />
                     </div>
                   </button>
                 );
@@ -379,8 +387,8 @@ export default function OrderScreen() {
         >
           <div className="stack">
             <div className="field">
-              <label>จำนวนเงินส่วนลด (บาท)</label>
-              <input className="input" type="number" min="0" max={Number(order.subtotal)} step="1" value={discount}
+              <label htmlFor="discount-amount">จำนวนเงินส่วนลด (บาท)</label>
+              <input id="discount-amount" className="input" type="number" min="0" max={Number(order.subtotal)} step="1" value={discount}
                 onChange={(e) => setDiscount(e.target.value)} autoFocus />
               {discountError && <div className="tiny" style={{ color: 'var(--danger)' }}>{discountError}</div>}
             </div>

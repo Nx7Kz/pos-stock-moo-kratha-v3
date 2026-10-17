@@ -9,8 +9,10 @@ import 'dotenv/config';
 import { pool } from '../src/db.js';
 
 const DAYS = Number(process.argv[2]) || 45;
-const rnd = (a, b) => a + Math.random() * (b - a);
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+// ข้อมูลสาธิตเท่านั้น การสุ่มไม่เกี่ยวกับความปลอดภัย
+const chance = () => Math.random(); // NOSONAR
+const rnd = (a, b) => a + chance() * (b - a);
+const pick = (arr) => arr[Math.floor(chance() * arr.length)];
 const money = (n) => Math.round(n * 100) / 100;
 const q3 = (n) => Math.round(n * 1000) / 1000;
 
@@ -40,6 +42,7 @@ async function main() {
     let bills = 0;
     let revenue = 0;
 
+    const ctx = { client, tables, users, bomOf, sets, extras, snacks, drinks, ices };
     for (let d = DAYS; d >= 1; d--) {
       const day = new Date();
       day.setDate(day.getDate() - d);
@@ -52,59 +55,8 @@ async function main() {
       await restock(client, day, users[0].id);
 
       for (let b = 0; b < billCount; b++) {
-        const table = pick(tables);
-        const guests = Math.max(2, Math.round(rnd(2, table.seats)));
-        const staff = pick(users).id;
-
-        const openHour = rnd(16, 21);
-        const openedAt = new Date(day);
-        openedAt.setHours(Math.floor(openHour), Math.floor(rnd(0, 59)), 0, 0);
-        const closedAt = new Date(openedAt.getTime() + rnd(50, 130) * 60000);
-
-        // ประกอบรายการอาหารของบิลนี้
-        const lines = [];
-        const set = pick(sets);
-        lines.push({ m: set, qty: 1, round: 1 });
-        for (const dk of drinks) if (Math.random() < 0.25) lines.push({ m: dk, qty: Math.ceil(rnd(1, guests)), round: 1 });
-        if (Math.random() < 0.55) lines.push({ m: pick(ices), qty: 1, round: 1 });
-        if (Math.random() < 0.5) lines.push({ m: pick(snacks), qty: 1, round: 1 });
-        // สั่งเพิ่มระหว่างทาน
-        const extraCount = Math.round(rnd(0, 4));
-        for (let i = 0; i < extraCount; i++) lines.push({ m: pick(extras), qty: Math.ceil(rnd(1, 2)), round: 2 });
-
-        const subtotal = money(lines.reduce((s, l) => s + Number(l.m.price) * l.qty, 0));
-        const discount = Math.random() < 0.12 ? Math.round(rnd(20, 80) / 10) * 10 : 0;
-        const grand = money(Math.max(subtotal - discount, 0));
-
-        const orderNo = await docNo(client, 'orders', 'order_no', 'OD', openedAt);
-        const { rows: [order] } = await client.query(
-          `INSERT INTO orders (order_no, table_id, status, channel, guest_count, subtotal, discount,
-                               grand_total, opened_by, closed_by, opened_at, closed_at)
-           VALUES ($1,$2,'PAID',$3,$4,$5,$6,$7,$8,$8,$9,$10) RETURNING id`,
-          [orderNo, table.id, Math.random() < 0.25 ? 'CUSTOMER' : 'STAFF', guests,
-           subtotal, discount, grand, staff, openedAt, closedAt]
-        );
-
-        for (const l of lines) {
-          await client.query(
-            `INSERT INTO order_items (order_id, menu_item_id, qty, unit_price, line_total, round_no, created_at)
-             VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-            [order.id, l.m.id, l.qty, l.m.price, money(Number(l.m.price) * l.qty), l.round, openedAt]
-          );
-          await consume(client, bomOf.get(l.m.id) ?? [], l.qty, order.id, orderNo, staff, openedAt);
-        }
-
-        const method = Math.random() < 0.5 ? 'CASH' : Math.random() < 0.6 ? 'QR' : 'TRANSFER';
-        const received = method === 'CASH' ? Math.ceil(grand / 100) * 100 : null;
-        const receiptNo = await docNo(client, 'payments', 'receipt_no', 'RC', closedAt);
-        await client.query(
-          `INSERT INTO payments (order_id, method, amount, received, change_amount, receipt_no, cashier_id, paid_at)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-          [order.id, method, grand, received, received ? money(received - grand) : 0, receiptNo, staff, closedAt]
-        );
-
+        revenue += await createBill(ctx, day);
         bills++;
-        revenue += grand;
       }
       process.stdout.write(`\r  สร้างข้อมูล... วันที่ ${DAYS - d + 1}/${DAYS}  (${bills} บิล)`);
     }
@@ -119,6 +71,69 @@ async function main() {
     client.release();
     await pool.end();
   }
+}
+
+/** ประกอบรายการอาหารของบิลหนึ่งบิล */
+function buildLines({ sets, extras, snacks, drinks, ices }, guests) {
+  const lines = [];
+  const set = pick(sets);
+  lines.push({ m: set, qty: 1, round: 1 });
+  for (const dk of drinks) if (chance() < 0.25) lines.push({ m: dk, qty: Math.ceil(rnd(1, guests)), round: 1 });
+  if (chance() < 0.55) lines.push({ m: pick(ices), qty: 1, round: 1 });
+  if (chance() < 0.5) lines.push({ m: pick(snacks), qty: 1, round: 1 });
+  // สั่งเพิ่มระหว่างทาน
+  const extraCount = Math.round(rnd(0, 4));
+  for (let i = 0; i < extraCount; i++) lines.push({ m: pick(extras), qty: Math.ceil(rnd(1, 2)), round: 2 });
+
+  return lines;
+}
+
+/** สร้างบิลที่ปิดแล้ว 1 บิลในวันที่กำหนด คืนยอดชำระ */
+async function createBill(ctx, day) {
+  const { client, tables, users, bomOf } = ctx;
+  const table = pick(tables);
+  const guests = Math.max(2, Math.round(rnd(2, table.seats)));
+  const staff = pick(users).id;
+
+  const openHour = rnd(16, 21);
+  const openedAt = new Date(day);
+  openedAt.setHours(Math.floor(openHour), Math.floor(rnd(0, 59)), 0, 0);
+  const closedAt = new Date(openedAt.getTime() + rnd(50, 130) * 60000);
+
+  const lines = buildLines(ctx, guests);
+  const subtotal = money(lines.reduce((s, l) => s + Number(l.m.price) * l.qty, 0));
+  const discount = chance() < 0.12 ? Math.round(rnd(20, 80) / 10) * 10 : 0;
+  const grand = money(Math.max(subtotal - discount, 0));
+
+  const orderNo = await docNo(client, 'orders', 'order_no', 'OD', openedAt);
+  const { rows: [order] } = await client.query(
+    `INSERT INTO orders (order_no, table_id, status, channel, guest_count, subtotal, discount,
+                         grand_total, opened_by, closed_by, opened_at, closed_at)
+     VALUES ($1,$2,'PAID',$3,$4,$5,$6,$7,$8,$8,$9,$10) RETURNING id`,
+    [orderNo, table.id, chance() < 0.25 ? 'CUSTOMER' : 'STAFF', guests,
+     subtotal, discount, grand, staff, openedAt, closedAt]
+  );
+
+  for (const l of lines) {
+    await client.query(
+      `INSERT INTO order_items (order_id, menu_item_id, qty, unit_price, line_total, round_no, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [order.id, l.m.id, l.qty, l.m.price, money(Number(l.m.price) * l.qty), l.round, openedAt]
+    );
+    await consume(client, bomOf.get(l.m.id) ?? [], l.qty, order.id, orderNo, staff, openedAt);
+  }
+
+  let method = 'CASH';
+  if (chance() >= 0.5) method = chance() < 0.6 ? 'QR' : 'TRANSFER';
+  const received = method === 'CASH' ? Math.ceil(grand / 100) * 100 : null;
+  const receiptNo = await docNo(client, 'payments', 'receipt_no', 'RC', closedAt);
+  await client.query(
+    `INSERT INTO payments (order_id, method, amount, received, change_amount, receipt_no, cashier_id, paid_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    [order.id, method, grand, received, received ? money(received - grand) : 0, receiptNo, staff, closedAt]
+  );
+
+  return grand;
 }
 
 /** ตัดสต็อกตามสูตร BOM พร้อมเขียน ledger ย้อนหลังตามเวลาที่กำหนด */
@@ -193,7 +208,9 @@ async function docNo(client, table, column, prefix, at) {
   return `${prefix}${code}-${String(rows[0].seq).padStart(4, '0')}`;
 }
 
-main().catch((err) => {
+try {
+  await main();
+} catch (err) {
   console.error('\n  สร้างข้อมูลสาธิตไม่สำเร็จ:', err.message);
   process.exit(1);
-});
+}

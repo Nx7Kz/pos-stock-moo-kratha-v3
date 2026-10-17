@@ -14,7 +14,8 @@
     "db:backup": "node scripts/backup.js",
     "db:restore": "node scripts/restore.js",
     "tunnel": "node scripts/tunnel.js",
-    "test": "node tests/api.test.mjs"
+    "test": "node tests/api.test.mjs",
+    "test:coverage": "c8 --include=src/** --reporter=lcov --reporter=text-summary node tests/coverage-run.mjs && node tests/lcov-relative.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -24,5 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "c8": "^10.1.3"
   }
 }

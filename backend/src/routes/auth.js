@@ -13,7 +13,7 @@ router.post('/login', wrap(async (req, res) => {
 
   const { rows } = await query('SELECT * FROM users WHERE username = $1', [username]);
   const user = rows[0];
-  if (!user || !user.is_active) throw new AppError(401, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
+  if (!user?.is_active) throw new AppError(401, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');
 
   const ok = await bcrypt.compare(password, user.password_hash);
   if (!ok) throw new AppError(401, 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');

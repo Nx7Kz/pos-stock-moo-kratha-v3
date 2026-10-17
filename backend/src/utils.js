@@ -51,7 +51,7 @@ export function toCsv(rows, headers) {
   const esc = (v) => {
     if (v === null || v === undefined) return '';
     const s = String(v);
-    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return /[",\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
   };
   const lines = [cols.map((c) => esc(c.label)).join(',')];
   for (const r of rows) lines.push(cols.map((c) => esc(r[c.key])).join(','));
@@ -71,10 +71,9 @@ export function dateRange(q) {
  */
 export function promptPayPayload(target, amount) {
   const id = String(target).replace(/\D/g, '');
-  const acc =
-    id.length === 13 ? `0213${id}` // เลขประจำตัวผู้เสียภาษี
-    : id.length === 10 ? `0113${'0066' + id.slice(1)}` // เบอร์มือถือ -> 0066xxxxxxxxx
-    : `0113${id.padStart(13, '0')}`;
+  let acc = `0113${id.padStart(13, '0')}`;
+  if (id.length === 13) acc = `0213${id}`; // เลขประจำตัวผู้เสียภาษี
+  else if (id.length === 10) acc = `01130066${id.slice(1)}`; // เบอร์มือถือ -> 0066xxxxxxxxx
 
   const f = (tag, val) => `${tag}${String(val.length).padStart(2, '0')}${val}`;
   const merchant = f('29', `0016A000000677010111${acc}`);
@@ -91,7 +90,7 @@ export function promptPayPayload(target, amount) {
   // CRC-16/CCITT-FALSE
   let crc = 0xffff;
   for (let i = 0; i < body.length; i++) {
-    crc ^= body.charCodeAt(i) << 8;
+    crc ^= body.codePointAt(i) << 8;
     for (let j = 0; j < 8; j++) crc = crc & 0x8000 ? ((crc << 1) ^ 0x1021) & 0xffff : (crc << 1) & 0xffff;
   }
   return body + crc.toString(16).toUpperCase().padStart(4, '0');

@@ -155,7 +155,7 @@ async function createStockDoc(req, docType) {
     for (const line of lines) {
       const ing = await resolveIngredient(client, line);
       const qty = Number(line.qty);
-      if (!(qty > 0)) throw new AppError(400, `จำนวนของ "${ing.name_th}" ต้องมากกว่า 0`);
+      if (Number.isNaN(qty) || qty <= 0) throw new AppError(400, `จำนวนของ "${ing.name_th}" ต้องมากกว่า 0`);
 
       const unitCost = line.unit_cost !== undefined ? Number(line.unit_cost) : Number(ing.cost_per_unit);
       const lineCost = money(qty * unitCost);

@@ -64,8 +64,8 @@ export default function BillSlip() {
 
           <hr />
 
-          {b.items.map((it, i) => (
-            <div key={i} style={{ padding: '3px 0' }}>
+          {b.items.map((it) => (
+            <div key={it.id} style={{ padding: '3px 0' }}>
               <div className="receipt-item">
                 <span>{it.name_th}</span>
                 <span className="num">{baht(it.line_total)}</span>

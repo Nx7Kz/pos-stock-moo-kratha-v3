@@ -7,6 +7,50 @@ import { baht, qty as fmtQty, METHOD_LABEL } from '../lib/format';
 
 const QUICK = [100, 200, 500, 1000];
 
+/**
+ * โหลดบิลแล้วเรียกเช็คบิลอัตโนมัติ เพื่อให้โต๊ะแสดงสถานะ "รอชำระเงิน" บนผังร้าน
+ * ถ้ามีเครื่องอื่นกดเช็คบิลไปแล้ว (409) ให้ถือว่าสำเร็จและอ่านสถานะล่าสุดแทน
+ * เช็คบิลไม่สำเร็จด้วยเหตุอื่น: แจ้งเตือนแต่ยังแสดงบิลให้ชำระได้
+ */
+async function loadForPayment(id, onError) {
+  const r = await api.get(`/orders/${id}`);
+  if (r.data.status !== 'OPEN') return r.data;
+  try {
+    return (await api.post(`/orders/${id}/bill`)).data;
+  } catch (err) {
+    if (err.status !== 409) {
+      onError(err);
+      return r.data;
+    }
+    return (await api.get(`/orders/${id}`)).data;
+  }
+}
+
+function paymentBody(id, method, receivedNum, reference) {
+  const body = { order_id: Number(id), method };
+  if (method === 'CASH' && receivedNum > 0) body.received = receivedNum;
+  if (method !== 'CASH' && reference) body.reference_no = reference;
+  return body;
+}
+
+/** เงินทอน หรือเงินที่ยังขาด หลังกรอกจำนวนเงินที่รับมา */
+function ChangeAlert({ change }) {
+  if (change < 0) {
+    return (
+      <div className="alert alert-danger">
+        <span>⚠</span>
+        <div>เงินขาดอีก <strong>{baht(-change)} บาท</strong></div>
+      </div>
+    );
+  }
+  return (
+    <div className="alert alert-info">
+      <span>💵</span>
+      <div>เงินทอน <strong>{baht(change)} บาท</strong></div>
+    </div>
+  );
+}
+
 export default function Payment() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -20,25 +64,8 @@ export default function Payment() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const r = await api.get(`/orders/${id}`);
-        setOrder(r.data);
-        // เรียกเช็คบิลอัตโนมัติ เพื่อให้โต๊ะแสดงสถานะ "รอชำระเงิน" บนผังร้าน
-        // ถ้ามีเครื่องอื่นกดเช็คบิลไปแล้ว (409) ให้ถือว่าสำเร็จและอ่านสถานะล่าสุดแทน
-        if (r.data.status === 'OPEN') {
-          try {
-            const b = await api.post(`/orders/${id}/bill`);
-            setOrder(b.data);
-          } catch (err) {
-            if (err.status !== 409) throw err;
-            setOrder((await api.get(`/orders/${id}`)).data);
-          }
-        }
-      } catch (e) {
-        toast(e.message, 'err');
-      }
-    })();
+    const fail = (e) => toast(e.message, 'err');
+    loadForPayment(id, fail).then(setOrder).catch(fail);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -85,11 +112,7 @@ export default function Payment() {
   async function pay() {
     setBusy(true);
     try {
-      const body = { order_id: Number(id), method };
-      if (method === 'CASH' && receivedNum > 0) body.received = receivedNum;
-      if (method !== 'CASH' && reference) body.reference_no = reference;
-
-      const r = await api.post('/payments', body);
+      const r = await api.post('/payments', paymentBody(id, method, receivedNum, reference));
       toast(r.message, 'ok');
       nav(`/receipt/${id}`);
     } catch (e) {
@@ -162,7 +185,7 @@ export default function Payment() {
                 {method === 'CASH' && (
                   <>
                     <div className="field">
-                      <label>รับเงินมา (เว้นว่าง = รับพอดี)</label>
+                      <div className="field-label">รับเงินมา (เว้นว่าง = รับพอดี)</div>
                       <div className="amount-display">{received || '0'}</div>
                     </div>
 
@@ -183,23 +206,14 @@ export default function Payment() {
                       <button className="btn btn-sm" onClick={() => setReceived(String(total))}>รับพอดี {baht(total)}</button>
                     </div>
 
-                    {receivedNum > 0 && (
-                      <div className={`alert ${change >= 0 ? 'alert-info' : 'alert-danger'}`}>
-                        <span>{change >= 0 ? '💵' : '⚠'}</span>
-                        <div>
-                          {change >= 0
-                            ? <>เงินทอน <strong>{baht(change)} บาท</strong></>
-                            : <>เงินขาดอีก <strong>{baht(-change)} บาท</strong></>}
-                        </div>
-                      </div>
-                    )}
+                    {receivedNum > 0 && <ChangeAlert change={change} />}
                   </>
                 )}
 
                 {method === 'TRANSFER' && (
                   <div className="field">
-                    <label>เลขที่อ้างอิงการโอน</label>
-                    <input className="input" placeholder="เช่น TXN-20260827-0001"
+                    <label htmlFor="pay-ref-transfer">เลขที่อ้างอิงการโอน</label>
+                    <input id="pay-ref-transfer" className="input" placeholder="เช่น TXN-20260827-0001"
                       value={reference} onChange={(e) => setReference(e.target.value)} />
                   </div>
                 )}
@@ -213,8 +227,8 @@ export default function Payment() {
                       <div className="tiny faint">พร้อมเพย์ {qr.promptpay_id}</div>
                     </div>
                     <div className="field" style={{ width: '100%' }}>
-                      <label>เลขที่อ้างอิง (ถ้ามี)</label>
-                      <input className="input" placeholder="เลขอ้างอิงจากสลิป"
+                      <label htmlFor="pay-ref-qr">เลขที่อ้างอิง (ถ้ามี)</label>
+                      <input id="pay-ref-qr" className="input" placeholder="เลขอ้างอิงจากสลิป"
                         value={reference} onChange={(e) => setReference(e.target.value)} />
                     </div>
                   </div>
@@ -223,7 +237,8 @@ export default function Payment() {
                 </>)}
 
                 <button className="btn btn-accent btn-block btn-lg" onClick={pay} disabled={busy || (!settled && !canPay)}>
-                  {busy ? 'กำลังบันทึก…' : settled ? 'ปิดบิล' : `รับชำระ ${baht(total)} บาท`}
+                  {busy && 'กำลังบันทึก…'}
+                  {!busy && (settled ? 'ปิดบิล' : `รับชำระ ${baht(total)} บาท`)}
                 </button>
               </div>
             </div>

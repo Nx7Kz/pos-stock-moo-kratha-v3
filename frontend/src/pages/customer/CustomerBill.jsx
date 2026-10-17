@@ -109,19 +109,21 @@ export default function CustomerBill() {
 
       <div className="cust-shell">
         <div className="content">
-          {paid && !bill ? (
+          {paid && !bill && (
             <Empty icon="✅">
               ชำระเงินเรียบร้อยแล้ว
               <div className="small" style={{ marginTop: 6 }}>ขอบคุณที่ใช้บริการ แล้วพบกันใหม่นะครับ/ค่ะ</div>
             </Empty>
-          ) : !bill ? (
+          )}
+          {!paid && !bill && (
             <Empty icon="🥢">
               ยังไม่มีรายการสั่งอาหาร
               <div style={{ marginTop: 14 }}>
                 <button className="btn btn-accent" onClick={() => nav(`/customer/${tableNo}`)}>เลือกเมนู</button>
               </div>
             </Empty>
-          ) : (
+          )}
+          {bill && (
             <div className="pay-grid">
               <div className="card">
                 <div className="card-head">

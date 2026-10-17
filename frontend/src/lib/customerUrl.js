@@ -2,7 +2,10 @@ import { api } from './api';
 
 export const isLocalHost = (url) => /^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(url);
 
-const withPort = (host) => `${location.protocol}//${host}${location.port ? `:${location.port}` : ''}`;
+const withPort = (host) => {
+  const port = location.port ? ':' + location.port : '';
+  return `${location.protocol}//${host}${port}`;
+};
 
 /** ที่อยู่ตั้งต้น: ค่าที่บันทึกไว้ > ที่อยู่ที่เปิดอยู่ (ถ้าไม่ใช่ localhost) > IP ของเครื่องในวง LAN */
 export function defaultBase(saved, lan) {
@@ -26,9 +29,13 @@ export async function getCustomerBase() {
 export async function getQrInfo() {
   const r = await api.get('/tables/qr-info');
   const lan = r.data.lan_addresses || [];
-  return { base: defaultBase(r.data.customer_base_url, lan).replace(/\/+$/, ''), saved: r.data.customer_base_url, lan };
+  let base = defaultBase(r.data.customer_base_url, lan);
+  while (base.endsWith('/')) base = base.slice(0, -1);
+  return { base, saved: r.data.customer_base_url, lan };
 }
 
 /** ลิงก์หน้าสั่งอาหารของโต๊ะ ถ้าใส่รหัสมาด้วย ลูกค้าสแกนแล้วเข้าได้เลยไม่ต้องกรอก */
-export const customerUrl = (base, tableNo, code) =>
-  `${base}/customer/${encodeURIComponent(tableNo)}${code ? `?code=${encodeURIComponent(code)}` : ''}`;
+export const customerUrl = (base, tableNo, code) => {
+  const query = code ? '?code=' + encodeURIComponent(code) : '';
+  return `${base}/customer/${encodeURIComponent(tableNo)}${query}`;
+};

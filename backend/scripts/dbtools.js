@@ -22,7 +22,8 @@ export const DUMP_FILE = 'database.dump';
 /** รันคำสั่งใน docker; ส่ง/รับข้อมูลผ่านไฟล์ (stdin/stdout) ได้ */
 export function dockerExec(args, { stdinFile, stdoutFile } = {}) {
   return new Promise((resolve, reject) => {
-    const p = spawn('docker', ['exec', '-i', DB.container, ...args], {
+    // สคริปต์รันในเครื่องผู้ดูแลเท่านั้น ใช้ docker จาก PATH ของเครื่อง
+    const p = spawn('docker', ['exec', '-i', DB.container, ...args], { // NOSONAR
       stdio: [stdinFile ? 'pipe' : 'ignore', 'pipe', 'pipe'],
     });
     let out = '';
